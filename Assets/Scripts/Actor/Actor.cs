@@ -9,22 +9,36 @@ public class Actor : MonoBehaviour
 {
     float Health; // Must be set by the Actor's child
     public bool IsGrounded;
-    int Direction;
+    public bool HasDoubleJumped;
+    public bool DoubleJumpPermitted;
+    public bool WallJumpPermitted;
+    
+    int Direction; // -1: left, 1: right
     public LayerMask mask; // Must be set to "Ground" via inspector
     GameObject cube; // Only used to visualize the ground detection box in-game
 
     public float GetHealth() { return Health; }
     public int GetDirection() { return Direction; }
     public bool GetIsGrounded() { return IsGrounded; }
+    public bool GetHasDoubleJumped() { return HasDoubleJumped; }
+    public bool GetDoubleJumpPermitted() { return DoubleJumpPermitted; }
+    public bool GetWallJumpPermitted() { return WallJumpPermitted; }
+
 
     public void SetHealth(float newHP) { Health = newHP; }
     public void SetIsGrounded(bool g) { IsGrounded = g; }
+    public void SetHasDoubleJumped(bool j) { HasDoubleJumped = j; }
     public void SetDirection(int d) { if (d == -1 || d == 1) Direction = d; }
+    public void SetDoubleJumpPermitted(bool j) { DoubleJumpPermitted = j; }
+    public void SetWallJumpPermitted(bool j) { WallJumpPermitted = j; }
 
     private void Awake()
     {
         Direction = 1;
         IsGrounded = false;
+        HasDoubleJumped = false;
+        DoubleJumpPermitted = false;
+        WallJumpPermitted = false;
     }
 
     /// <summary>
@@ -47,7 +61,7 @@ public class Actor : MonoBehaviour
 
         // check if ground detection box overlaps with the ground
         if ((Physics2D.OverlapBox(GroundDetectorCenter, GroundDetectorSize, 0f, mask) != null))
-            SetIsGrounded(true);
+            OnGrounded();
         else
             SetIsGrounded(false);
     }
@@ -59,5 +73,34 @@ public class Actor : MonoBehaviour
     public virtual void TakeDamage(float damage)
     {
         Health -= damage;
+    }
+
+    /// <summary>
+    /// Used once the actor is on the ground.
+    /// Resets "IsGrounded" and "HasDoubleJumped" to their default values.
+    /// </summary>
+    public void OnGrounded() {
+        SetIsGrounded(true);
+        SetHasDoubleJumped(false);
+    }
+
+    public bool CanWallJump() {
+        if (IsGrounded)
+            return false;
+        Vector2 WallDetectorSize = new Vector2(0.05f, GetComponent<BoxCollider2D>().size.y - 0.02f);
+        Vector2 WallDetectorCenter = (Vector2)transform.position +
+            (Vector2.right * GetDirection() * GetComponent<BoxCollider2D>().offset.x * transform.localScale.x) +
+            (Vector2.right * GetDirection() * .5f * (GetComponent<BoxCollider2D>().size.x - GetComponent<BoxCollider2D>().offset.x + WallDetectorSize.x) * transform.localScale.x);
+
+        return Physics2D.OverlapBox(WallDetectorCenter, WallDetectorSize, 0f, mask) != null;
+        // return if is touching wall and is moving into said wall...
+
+    }
+
+    /// <summary>
+    /// Returns if the actor is allowed to double jump in the moment.
+    /// </summary>
+    public bool CanDoubleJump {
+        get { return !HasDoubleJumped && DoubleJumpPermitted; }
     }
 }

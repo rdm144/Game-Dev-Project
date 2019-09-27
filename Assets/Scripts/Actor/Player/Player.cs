@@ -16,6 +16,8 @@ public class Player : Actor
         rb = GetComponent<Rigidbody2D>();
         RunSpeed = 15;
         JumpForce = Vector2.up * 15;
+        SetDoubleJumpPermitted(true);
+        SetWallJumpPermitted(true);
 
         LeftKey = KeyCode.A;
         RightKey = KeyCode.D;
@@ -28,7 +30,8 @@ public class Player : Actor
         CheckIfOnGround();
         GetKeyboardInput();
         FaceForward();
-        
+
+        //if (CanWallJump()) Debug.Log("CanWallJump");
     }
 
     void FixedUpdate()
@@ -43,7 +46,7 @@ public class Player : Actor
     void GetKeyboardInput()
     {
         // Jump
-        if (Input.GetKeyDown(JumpKey) && GetIsGrounded() == true)
+        if (Input.GetKeyDown(JumpKey) && (GetIsGrounded() == true || CanDoubleJump))
         {
             JumpInput = true;
         }
@@ -94,6 +97,10 @@ public class Player : Actor
     {
         if (JumpInput)
         {
+            if (!IsGrounded) {
+                SetHasDoubleJumped(true);
+                ResetVerticalMovement();
+            }
             rb.AddForce(JumpForce, ForceMode2D.Impulse);
             JumpInput = false;
         }
@@ -115,5 +122,14 @@ public class Player : Actor
             rb.gravityScale = ShortHopGravity;                             // Apply higher gravity during hop
         else
             rb.gravityScale = DefaultGravity;                              // Apply normal gravity
+    }
+
+    /// <summary>
+    /// Sets the y vector of the player's movement to 0.
+    /// </summary>
+    void ResetVerticalMovement() {
+        Vector2 vel = rb.velocity;
+        vel.y = 0;
+        rb.velocity = vel;
     }
 }
