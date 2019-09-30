@@ -4,24 +4,34 @@ using UnityEngine;
 
 public class Player : Actor
 {
-    public bool LeftInput, RightInput, JumpInput;
-    float RunSpeed;
+    public bool LeftInput, RightInput, JumpInput, DashInput;
+    bool IsAirDashing, IsGroundDashing;
+    float RunSpeed, DashSpeed;
+    int AirDashCounter, MaxAirDashFrames;
     Vector2 JumpForce;
     Rigidbody2D rb;
-    KeyCode LeftKey, RightKey, JumpKey;
+    Shader shaderGUItext;
+    KeyCode LeftKey, RightKey, JumpKey, DashKey;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         RunSpeed = 15;
+        DashSpeed = RunSpeed * 2;
         JumpForce = Vector2.up * 15;
         SetDoubleJumpPermitted(true);
         SetWallJumpPermitted(true);
+        AirDashCounter = 0; // Holds the current number of airdash frames
+        MaxAirDashFrames = 20; // Allow airdash for 20 fixed update frames
+        IsAirDashing = false;
+        IsGroundDashing = false;
+        shaderGUItext = Shader.Find("GUI/Text Shader"); // Shader for after-images when dashing
 
-        LeftKey = KeyCode.A;
+        LeftKey = KeyCode.A; // Hard-coded keybinds. Remove later.
         RightKey = KeyCode.D;
         JumpKey = KeyCode.Space;
+        DashKey = KeyCode.LeftShift;
     }
 
     // Update is called once per frame
@@ -50,6 +60,7 @@ public class Player : Actor
         {
             JumpInput = true;
         }
+
         // Left or Right movement
         if (Input.GetKey(LeftKey) && !Input.GetKey(RightKey))
         {
@@ -66,6 +77,7 @@ public class Player : Actor
             LeftInput = false;
             RightInput = false;
         }
+        DashInput = Input.GetKey(DashKey); // Dash input
     }
 
     /// <summary>
@@ -84,10 +96,42 @@ public class Player : Actor
     /// </summary>
     void HorizontalMovement()
     {
-        if (LeftInput || RightInput)
-            rb.velocity = new Vector2(RunSpeed * GetDirection(), rb.velocity.y);
+        if (GetIsGrounded()) AirDashCounter = 0; // Reset airdash counter when on the ground
+        if (DashInput)
+            Dash();
         else
-            rb.velocity = new Vector2(0, rb.velocity.y);
+        {
+            IsGroundDashing = false;
+            IsAirDashing = false;
+            if (LeftInput || RightInput)
+                rb.velocity = new Vector2(RunSpeed * GetDirection(), rb.velocity.y);
+            else
+                rb.velocity = new Vector2(0, rb.velocity.y);
+        }
+    }
+
+    void Dash()
+    {
+        bool CanAirDash = ((AirDashCounter < MaxAirDashFrames) ? true : false); // Check if we are allowed to airdash
+        CreateAfterImage();
+        if (!GetIsGrounded() && CanAirDash && !IsAirDashing && !IsGroundDashing) // Begin air dash state
+        {
+            rb.gravityScale = 0;
+            rb.velocity = new Vector2(DashSpeed * GetDirection(), 0);
+            IsAirDashing = true;
+            AirDashCounter++;
+        }
+        else if (IsAirDashing && CanAirDash && !GetIsGrounded() && Mathf.Abs(rb.velocity.x) != 0) // Continue air dash
+        {
+            rb.velocity = new Vector2(DashSpeed * GetDirection(), 0);
+            AirDashCounter++;
+        }
+        else // Either dash-jumping or dashing along the ground
+        {
+            rb.velocity = new Vector2(GetDirection() * DashSpeed, rb.velocity.y);
+            IsGroundDashing = true;
+            IsAirDashing = false;
+        }
     }
 
     /// <summary>
@@ -104,7 +148,8 @@ public class Player : Actor
             rb.AddForce(JumpForce, ForceMode2D.Impulse);
             JumpInput = false;
         }
-        AlterGravity();
+        if(!IsAirDashing)
+            AlterGravity();
     }
 
     /// <summary>
@@ -131,5 +176,19 @@ public class Player : Actor
         Vector2 vel = rb.velocity;
         vel.y = 0;
         rb.velocity = vel;
+    }
+
+    void CreateAfterImage()
+    {
+        GameObject afterImage = new GameObject();                                                   // Create a new after-image object
+        afterImage.name = "After Image";                                                            // Rename the object for debugging purposes
+        afterImage.AddComponent<SpriteRenderer>();                                                  // give the after-image a sprite renderer
+        afterImage.AddComponent<InstancedAfterImage>();                                             // add a script to monitor the after-image's transparency and destruction
+        afterImage.transform.position = transform.position;                                         // place the after-image at the player's position
+        afterImage.transform.localScale = transform.localScale;                                     // scale the after-image to the player
+        afterImage.transform.rotation = transform.rotation;                                         // rotate the after-image according to the player's rotation
+        afterImage.GetComponent<SpriteRenderer>().sprite = GetComponent<SpriteRenderer>().sprite;   // set the after-image's sprite to the player sprite
+        afterImage.GetComponent<SpriteRenderer>().material.shader = shaderGUItext;                  // set sprite material to GUI Text
+        afterImage.GetComponent<SpriteRenderer>().color = Color.red;                               // set the after-image's color to red
     }
 }
