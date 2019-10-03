@@ -5,9 +5,9 @@ using UnityEngine;
 public class Player : Actor
 {
     public bool LeftInput, RightInput, JumpInput, DashInput;
-    bool IsAirDashing, IsGroundDashing;
+    bool IsAirDashing, IsGroundDashing, HasWallJumped;
     float RunSpeed, DashSpeed;
-    int AirDashCounter, MaxAirDashFrames;
+    int AirDashCounter, MaxAirDashFrames, PostWallJumpTimer, MaxPostWallJumpRestrictionFrames;
     Vector2 JumpForce;
     Rigidbody2D rb;
     Shader shaderGUItext;
@@ -20,12 +20,15 @@ public class Player : Actor
         RunSpeed = 15;
         DashSpeed = RunSpeed * 2;
         JumpForce = Vector2.up * 15;
-        SetDoubleJumpPermitted(true);
-        SetWallJumpPermitted(true);
+        //SetDoubleJumpPermitted(true);
+        //SetWallJumpPermitted(true);
         AirDashCounter = 0; // Holds the current number of airdash frames
         MaxAirDashFrames = 20; // Allow airdash for 20 fixed update frames
+        PostWallJumpTimer = 0;
+        MaxPostWallJumpRestrictionFrames = 4;
         IsAirDashing = false;
         IsGroundDashing = false;
+        HasWallJumped = false;
         shaderGUItext = Shader.Find("GUI/Text Shader"); // Shader for after-images when dashing
 
         LeftKey = KeyCode.A; // Hard-coded keybinds. Remove later.
@@ -38,6 +41,7 @@ public class Player : Actor
     void Update()
     {
         CheckIfOnGround();
+        SetWallJumpPermitted(CanWallJump());
         GetKeyboardInput();
         FaceForward();
 
@@ -46,8 +50,19 @@ public class Player : Actor
 
     void FixedUpdate()
     {
+        if(HasWallJumped)
+        {
+            PostWallJumpTimer++;
+            if(PostWallJumpTimer >= MaxPostWallJumpRestrictionFrames)
+            {
+                HasWallJumped = false;
+                PostWallJumpTimer = 0;
+            }
+        }
+        else
+            HorizontalMovement();
         VerticalMovement();
-        HorizontalMovement();
+        
     }
 
     /// <summary>
@@ -56,7 +71,7 @@ public class Player : Actor
     void GetKeyboardInput()
     {
         // Jump
-        if (Input.GetKeyDown(JumpKey) && (GetIsGrounded() == true || CanDoubleJump))
+        if (Input.GetKeyDown(JumpKey) && (GetIsGrounded() == true || CanDoubleJump || CanWallJump()))
         {
             JumpInput = true;
         }
@@ -142,10 +157,25 @@ public class Player : Actor
         if (JumpInput)
         {
             if (!IsGrounded) {
-                SetHasDoubleJumped(true);
-                ResetVerticalMovement();
+                if(GetWallJumpPermitted())
+                {
+                    //ResetVerticalMovement();
+                    rb.velocity = Vector2.zero;
+                    rb.AddForce(JumpForce + Vector2.right * GetDirection() * -1 * RunSpeed, ForceMode2D.Impulse);
+                    HasWallJumped = true;
+                    PostWallJumpTimer = 0;
+                }
+                else if(!GetHasDoubleJumped())
+                {
+                    ResetVerticalMovement();
+                    rb.AddForce(JumpForce, ForceMode2D.Impulse);
+                    SetHasDoubleJumped(true);
+                }
+                else
+                    ResetVerticalMovement();
             }
-            rb.AddForce(JumpForce, ForceMode2D.Impulse);
+            else
+                rb.AddForce(JumpForce, ForceMode2D.Impulse);
             JumpInput = false;
         }
         if(!IsAirDashing)
