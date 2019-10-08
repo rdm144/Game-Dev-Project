@@ -14,7 +14,7 @@ public class Actor : MonoBehaviour
     public bool WallJumpPermitted;
     
     int Direction; // -1: left, 1: right
-    public LayerMask mask; // Must be set to "Ground" via inspector
+    LayerMask mask; // Must be set to "Ground" via inspector
     GameObject cube; // Only used to visualize the ground detection box in-game
 
     public float GetHealth() { return Health; }
@@ -59,6 +59,7 @@ public class Actor : MonoBehaviour
         cube.transform.localScale = GroundDetectorSize;
         */////////////////////////////////////////////////////////////////
 
+        UpdateMask();
         // check if ground detection box overlaps with the ground
         if ((Physics2D.OverlapBox(GroundDetectorCenter, GroundDetectorSize, 0f, mask) != null))
             OnGrounded();
@@ -98,7 +99,7 @@ public class Actor : MonoBehaviour
         cube.transform.position = WallDetectorCenter;
         cube.transform.localScale = WallDetectorSize;
         */////////////////////////////////////////////////////////////////
-
+        UpdateMask();
         return Physics2D.OverlapBox(WallDetectorCenter, WallDetectorSize, 0f, mask) != null;
         // return if is touching wall and is moving into said wall...
 
@@ -109,5 +110,11 @@ public class Actor : MonoBehaviour
     /// </summary>
     public bool CanDoubleJump {
         get { return !HasDoubleJumped /*&& DoubleJumpPermitted*/; }
+    }
+
+    void UpdateMask() {
+        mask = 0x1F << 8;
+        if (gameObject.layer == 13) return;
+        mask ^= 1 << (gameObject.layer - 5);
     }
 }

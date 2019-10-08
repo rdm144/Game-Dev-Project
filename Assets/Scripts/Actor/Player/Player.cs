@@ -11,7 +11,11 @@ public class Player : Actor
     Vector2 JumpForce;
     Rigidbody2D rb;
     Shader shaderGUItext;
-    KeyCode LeftKey, RightKey, JumpKey, DashKey;
+    KeyCode LeftKey, RightKey, JumpKey, DashKey, ColourChangeKey;
+
+    // Note: Could move to Actor class
+    public enum Colour { Red, Green, Blue, Yellow }
+    Colour colour;
 
     // Start is called before the first frame update
     void Start()
@@ -30,11 +34,13 @@ public class Player : Actor
         IsGroundDashing = false;
         HasWallJumped = false;
         shaderGUItext = Shader.Find("GUI/Text Shader"); // Shader for after-images when dashing
+        colour = Colour.Yellow;
 
         LeftKey = KeyCode.A; // Hard-coded keybinds. Remove later.
         RightKey = KeyCode.D;
         JumpKey = KeyCode.Space;
         DashKey = KeyCode.LeftShift;
+        ColourChangeKey = KeyCode.Tab;
     }
 
     // Update is called once per frame
@@ -44,7 +50,7 @@ public class Player : Actor
         SetWallJumpPermitted(CanWallJump());
         GetKeyboardInput();
         FaceForward();
-
+        UpdateColour();
         //if (CanWallJump()) Debug.Log("CanWallJump");
     }
 
@@ -93,6 +99,10 @@ public class Player : Actor
             RightInput = false;
         }
         DashInput = Input.GetKey(DashKey); // Dash input
+
+        if (Input.GetKeyDown(ColourChangeKey)) {
+            ShiftColour();
+        }
     }
 
     /// <summary>
@@ -219,6 +229,59 @@ public class Player : Actor
         afterImage.transform.rotation = transform.rotation;                                         // rotate the after-image according to the player's rotation
         afterImage.GetComponent<SpriteRenderer>().sprite = GetComponent<SpriteRenderer>().sprite;   // set the after-image's sprite to the player sprite
         afterImage.GetComponent<SpriteRenderer>().material.shader = shaderGUItext;                  // set sprite material to GUI Text
-        afterImage.GetComponent<SpriteRenderer>().color = Color.red;                               // set the after-image's color to red
+        afterImage.GetComponent<SpriteRenderer>().color = GetCurrentSpriteColor();                               // set the after-image's color to red
+    }
+
+    void ShiftColour() {
+        int colourAsInt = (int)colour;
+        colourAsInt++;
+        colourAsInt %= 4;
+        colour = (Colour)colourAsInt;
+    }
+
+    void UpdateColour() {
+        GetComponent<SpriteRenderer>().color = GetCurrentSpriteColor();
+        gameObject.layer = GetCurrentLayer();
+    }
+
+    Color GetCurrentSpriteColor() {
+        Color newColor;
+        switch (colour) {
+            case Colour.Red:
+                newColor = Color.red;
+                break;
+            case Colour.Blue:
+                newColor = Color.blue;
+                break;
+            case Colour.Green:
+                newColor = Color.green;
+                break;
+            case Colour.Yellow:
+                newColor = Color.yellow;
+                break;
+            default:
+                newColor = Color.magenta;
+                break;
+        }
+        return newColor;
+    }
+
+    int GetCurrentLayer() {
+        int layer = 13;
+        switch (colour) {
+            case Colour.Red:
+                layer = 15;
+                break;
+            case Colour.Blue:
+                layer = 14;
+                break;
+            case Colour.Green:
+                layer = 17;
+                break;
+            case Colour.Yellow:
+                layer = 16;
+                break;
+        }
+        return layer;
     }
 }
