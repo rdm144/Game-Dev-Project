@@ -218,6 +218,10 @@ public class Player : Actor
         rb.velocity = vel;
     }
 
+    public Vector2 GetVelocity() {
+        return rb.velocity;
+    }
+
     void CreateAfterImage()
     {
         GameObject afterImage = new GameObject();                                                   // Create a new after-image object
