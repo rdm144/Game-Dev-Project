@@ -11,7 +11,6 @@ public class Player : Actor
     Vector2 JumpForce;
     Rigidbody2D rb;
     Shader shaderGUItext;
-    KeyCode LeftKey, RightKey, JumpKey, DashKey, ColourChangeKey;
 
     // Note: Could move to Actor class
     public enum Colour { Red, Green, Blue, Yellow }
@@ -35,12 +34,6 @@ public class Player : Actor
         HasWallJumped = false;
         shaderGUItext = Shader.Find("GUI/Text Shader"); // Shader for after-images when dashing
         colour = Colour.Yellow;
-
-        LeftKey = KeyCode.A; // Hard-coded keybinds. Remove later.
-        RightKey = KeyCode.D;
-        JumpKey = KeyCode.Space;
-        DashKey = KeyCode.LeftShift;
-        ColourChangeKey = KeyCode.Tab;
     }
 
     // Update is called once per frame
@@ -77,18 +70,18 @@ public class Player : Actor
     void GetKeyboardInput()
     {
         // Jump
-        if (Input.GetKeyDown(JumpKey) && (GetIsGrounded() == true || CanDoubleJump || CanWallJump()))
+        if (InputHandler.JumpKeyDown && (GetIsGrounded() == true || CanDoubleJump || CanWallJump()))
         {
             JumpInput = true;
         }
 
         // Left or Right movement
-        if (Input.GetKey(LeftKey) && !Input.GetKey(RightKey))
+        if (InputHandler.LeftKey && !InputHandler.RightKey)
         {
             LeftInput = true;
             RightInput = false;
         }
-        else if (Input.GetKey(RightKey) && !Input.GetKey(LeftKey))
+        else if (InputHandler.RightKey && !InputHandler.LeftKey)
         {
             LeftInput = false;
             RightInput = true;
@@ -98,9 +91,9 @@ public class Player : Actor
             LeftInput = false;
             RightInput = false;
         }
-        DashInput = Input.GetKey(DashKey); // Dash input
+        DashInput = InputHandler.DashKey; // Dash input
 
-        if (Input.GetKeyDown(ColourChangeKey)) {
+        if (InputHandler.ColourKeyDown) {
             ShiftColour();
         }
     }
@@ -203,7 +196,7 @@ public class Player : Actor
 
         if (rb.velocity.y < 0)                                             // Check if player is moving downwards
             rb.gravityScale = NormalFallGravity;                           // Increase gravity during fall
-        else if (rb.velocity.y > 0 && Input.GetKey(JumpKey) == false)      // Check if player is doing a short hop
+        else if (rb.velocity.y > 0 && InputHandler.JumpKey == false)      // Check if player is doing a short hop
             rb.gravityScale = ShortHopGravity;                             // Apply higher gravity during hop
         else
             rb.gravityScale = DefaultGravity;                              // Apply normal gravity
