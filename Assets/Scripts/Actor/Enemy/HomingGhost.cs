@@ -17,12 +17,6 @@ public class HomingGhost : Actor
         Target  = GameObject.FindGameObjectWithTag("Player");
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     void OnBecameVisible()
     {
         Launch();
@@ -32,20 +26,18 @@ public class HomingGhost : Actor
     {
         body.velocity = Vector3.zero;
         Camera cam = Camera.main;
-        Vector3 TeleportPosition = new Vector3(Target.transform.position.x + 20, Target.transform.position.y + 5, 0);
-        /*Vector3 ScreenPoint = new Vector3(Screen.width, Screen.height, cam.nearClipPlane);
-        // Get edge of the camera in world coordinates
-        TeleportPosition = cam.ScreenToWorldPoint(ScreenPoint);
-        TeleportPosition = new Vector3( TeleportPosition.x, TeleportPosition.y, 0);
-        */
+        Vector3 TeleportPosition = Vector3.zero;
+        if (Target != null)
+            TeleportPosition = new Vector3(Target.transform.position.x + 20, Target.transform.position.y + 5, 0);
         transform.position = TeleportPosition;
-        
-
+        Launch();
     }
 
     void Launch()
     {
-        Vector3 TargetDirection = Target.transform.position - transform.position; // Get direction from self to location
+        Vector3 TargetDirection = Vector3.right;
+        if (Target != null)
+            TargetDirection = Target.transform.position - transform.position; // Get direction from self to location
         TargetDirection.Normalize(); // Normalize the directional vector
         body.AddForce(TargetDirection * ForceMagnitude, ForceMode2D.Impulse); // Apply force where the magnitude points towards the target direction
     }

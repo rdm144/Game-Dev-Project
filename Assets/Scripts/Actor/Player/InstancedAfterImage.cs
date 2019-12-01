@@ -11,7 +11,7 @@ public class InstancedAfterImage : MonoBehaviour
 	void Start ()
     {
         sr = GetComponent<SpriteRenderer>();
-        decriment = 1 / 8f;//1 / 12f;
+        decriment = 1 / 12f;
     }
 	
 	// Update is called once per frame

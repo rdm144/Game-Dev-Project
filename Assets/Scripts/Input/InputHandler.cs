@@ -8,7 +8,7 @@ public class InputHandler{
     public static KeyCode right_key = KeyCode.D;
     public static KeyCode jump_key = KeyCode.Space;
     public static KeyCode dash_key = KeyCode.LeftShift;
-    public static KeyCode colour_key = KeyCode.Tab;
+    public static KeyCode colour_key = KeyCode.S;
 
     // F310 Input
     public static string jump_f310 = "joystick button 0";
